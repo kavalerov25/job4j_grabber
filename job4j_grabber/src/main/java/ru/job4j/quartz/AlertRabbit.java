@@ -14,7 +14,7 @@ import static org.quartz.SimpleScheduleBuilder.*;
 public class AlertRabbit {
     public static void main(String[] args) {
         try {
-            Properties properties = loadProperties("rabbit.properties");
+            Properties properties = loadProperties();
             Class.forName(properties.getProperty("db.driver-class-name"));
             try (Connection connection = DriverManager.getConnection(
                     properties.getProperty("db.url"),
@@ -28,7 +28,7 @@ public class AlertRabbit {
                         .usingJobData(data)
                         .build();
                 SimpleScheduleBuilder times = simpleSchedule()
-                        .withIntervalInSeconds(getInterval(properties))
+                        .withIntervalInSeconds((Integer.parseInt(properties.getProperty("rabbit.interval"))))
                         .repeatForever();
                 Trigger trigger = newTrigger()
                         .startNow()
@@ -38,25 +38,28 @@ public class AlertRabbit {
                 Thread.sleep(10000);
                 scheduler.shutdown();
             }
-        } catch (SchedulerException | InterruptedException | SQLException | ClassNotFoundException | IOException se) {
+        } catch (SchedulerException | InterruptedException | SQLException | ClassNotFoundException se) {
             se.printStackTrace();
         }
     }
 
-    public static Properties loadProperties(String fileName) throws IOException {
-        InputStream fis;
+    private static Properties loadProperties()  {
         Properties property = new Properties();
-        fis = AlertRabbit.class.getClassLoader().getResourceAsStream(fileName);
-        property.load(fis);
+        try (InputStream resource = AlertRabbit.class.getClassLoader().getResourceAsStream(("rabbit.properties"))) {
+            property.load(resource);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
         return property;
     }
 
-    public static int getInterval(Properties properties) {
-        int interval;
-        String intervalStr = properties.getProperty("rabbit.interval");
-        interval = Integer.parseInt(intervalStr);
-        return interval;
-    }
+//    public static int getInterval(Properties properties) {
+//        int interval;
+//        String intervalStr = properties.getProperty("rabbit.interval");
+//        interval = Integer.parseInt(intervalStr);
+//        return interval;
+//    }
 
     public static class Rabbit implements Job {
         public  Rabbit() {
