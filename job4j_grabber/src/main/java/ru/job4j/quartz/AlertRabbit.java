@@ -2,14 +2,15 @@ package ru.job4j.quartz;
 
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import java.util.Properties;
 
-import static org.quartz.JobBuilder.*;
-import static org.quartz.TriggerBuilder.*;
-import static org.quartz.SimpleScheduleBuilder.*;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 public class AlertRabbit {
     public static void main(String[] args) {
@@ -43,26 +44,18 @@ public class AlertRabbit {
         }
     }
 
-    private static Properties loadProperties()  {
+    private static Properties loadProperties() {
         Properties property = new Properties();
         try (InputStream resource = AlertRabbit.class.getClassLoader().getResourceAsStream(("rabbit.properties"))) {
             property.load(resource);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return property;
     }
 
-//    public static int getInterval(Properties properties) {
-//        int interval;
-//        String intervalStr = properties.getProperty("rabbit.interval");
-//        interval = Integer.parseInt(intervalStr);
-//        return interval;
-//    }
-
     public static class Rabbit implements Job {
-        public  Rabbit() {
+        public Rabbit() {
             System.out.println(hashCode());
         }
 
