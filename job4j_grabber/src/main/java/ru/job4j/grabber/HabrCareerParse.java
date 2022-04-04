@@ -9,8 +9,6 @@ import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.HarbCareerDateTimeParser;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,8 +25,14 @@ public class HabrCareerParse implements Parse {
 
     public static void main(String[] args) throws Exception {
         HabrCareerParse habrCareerParse = new HabrCareerParse(new HarbCareerDateTimeParser());
-        habrCareerParse.list(PAGE_LINK);
+        List<Post> posts = new ArrayList<>();
+        for (int i = 1; i < 6; i++) {
+            String link = String.format("%s%s%d", PAGE_LINK, "?page=", i);
+            posts = habrCareerParse.list(link);
+        }
+        posts.forEach(System.out::println);
     }
+
 
 
     private static String retrieveDescription(String link) throws IOException {
@@ -37,6 +41,16 @@ public class HabrCareerParse implements Parse {
         Elements rows = document.select(".job_show_description__body");
         Elements descriptionElement = rows.select(".job_show_description__vacancy_description");
         return descriptionElement.text();
+    }
+
+    private Post getPost(Element row) throws IOException {
+        Element titleElement = row.select(".vacancy-card__title").first();
+        Element linkElement = titleElement.child(0);
+        Element timeElement = row.select(".vacancy-card__date").first().child(0);
+        String vacancyName = titleElement.text();
+        String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
+        return new Post(vacancyName, link, retrieveDescription(link),
+                dateTimeParser.parse(timeElement.attr("datetime")));
     }
 
     @Override
@@ -51,27 +65,11 @@ public class HabrCareerParse implements Parse {
         }
         Elements rows = document.select(".vacancy-card__inner");
         rows.forEach(row -> {
-            Element titleElement = row.select(".vacancy-card__title").first();
-            Element linkElement = titleElement.child(0);
-            Element dateElement = row.select(".vacancy-card__date").first().child(0);
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            String vacancyDate = null;
             try {
-                vacancyDate = dateFormat.format(dateFormat.parse(dateElement.attr("datetime")));
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            String vacancyName = titleElement.text();
-            String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-            System.out.printf("%s: %s %s%n", new HarbCareerDateTimeParser().parse(dateElement.attr("datetime")), vacancyName, link);
-
-            String text = null;
-            try {
-                text = retrieveDescription(link);
+                posts.add(getPost(row));
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            System.out.println("< " + text + " />");
         });
         return posts;
     }
