@@ -25,25 +25,32 @@ public class HabrCareerParse implements Parse {
 
     public static void main(String[] args) throws Exception {
         HabrCareerParse habrCareerParse = new HabrCareerParse(new HarbCareerDateTimeParser());
-        List<Post> posts = new ArrayList<>();
+       habrCareerParse.parse();
+    }
+
+    public void parse() {
         for (int i = 1; i < 6; i++) {
-            String link = String.format("%s%s%d", PAGE_LINK, "?page=", i);
-            posts = habrCareerParse.list(link);
+            String link = String.format(PAGE_FIVE, SOURCE_LINK, i);
+            List<Post> posts = list(link);
+            posts.forEach(System.out::println);
         }
-        posts.forEach(System.out::println);
     }
 
 
-
-    private static String retrieveDescription(String link) throws IOException {
+    private static String retrieveDescription(String link)  {
         Connection connection = Jsoup.connect(link);
-        Document document = connection.get();
+        Document document = null;
+        try {
+            document = connection.get();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Elements rows = document.select(".job_show_description__body");
         Elements descriptionElement = rows.select(".job_show_description__vacancy_description");
         return descriptionElement.text();
     }
 
-    private Post getPost(Element row) throws IOException {
+    private Post getPost(Element row)  {
         Element titleElement = row.select(".vacancy-card__title").first();
         Element linkElement = titleElement.child(0);
         Element timeElement = row.select(".vacancy-card__date").first().child(0);
@@ -65,11 +72,7 @@ public class HabrCareerParse implements Parse {
         }
         Elements rows = document.select(".vacancy-card__inner");
         rows.forEach(row -> {
-            try {
-                posts.add(getPost(row));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            posts.add(getPost(row));
         });
         return posts;
     }
